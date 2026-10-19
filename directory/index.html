@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- No maximum-scale: pinch-zoom must stay enabled (WCAG 1.4.4). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Every page load opens a WebSocket to the Convex deployment before
+         anything renders (auth restore, then data). Warming the TCP+TLS
+         connection while the bundle downloads removes that handshake from
+         the critical path. Vite substitutes %VITE_CONVEX_URL% at build time. -->
+    <link rel="preconnect" href="%VITE_CONVEX_URL%" />
+    <title>Tampa Business Directory</title>
+    <meta name="description" content="Find trusted local businesses in Tampa, FL: HVAC, roofers, pool services, plumbers, restaurants and more, from The Tampa Scoop." />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

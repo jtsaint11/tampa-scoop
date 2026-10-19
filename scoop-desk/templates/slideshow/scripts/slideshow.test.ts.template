@@ -1,0 +1,144 @@
+import { afterEach, beforeEach, expect, mock, test } from "bun:test";
+
+type Doc = Record<string, any>;
+const rows = new Map<string, Doc>();
+let now = 1000;
+const realNow = Date.now;
+let scheduled: { delay: number; args: Doc } | null = null;
+let userId: string | null = "owner";
+const db = {
+  normalizeId: (_table: string, id: string) => (rows.has(id) ? id : null),
+  get: async (id: string) => rows.get(id) ?? null,
+  insert: async (_table: string, value: Doc) => {
+    const id = `session-${rows.size}`;
+    rows.set(id, structuredClone({ ...value, _id: id }));
+    return id;
+  },
+  patch: async (id: string, patch: Doc) => Object.assign(rows.get(id)!, patch),
+  delete: async (id: string) => {
+    rows.delete(id);
+  },
+};
+const ctx = {
+  db,
+  scheduler: {
+    runAfter: async (delay: number, _ref: unknown, args: Doc) => {
+      scheduled = { delay, args };
+    },
+  },
+};
+const builder = (definition: any) => definition;
+mock.module("../convex/_generated/server", () => ({
+  query: builder,
+  mutation: builder,
+  action: builder,
+  internalMutation: builder,
+}));
+mock.module("@convex-dev/auth/server", () => ({
+  getAuthUserId: async () => userId,
+}));
+mock.module("../convex/_generated/api", () => ({
+  internal: { presentations: { expire: "presentations:expire" } },
+}));
+const { start, read, control, takeControl, expire } = await import(
+  "../convex/presentations"
+);
+const { presentation } = await import("../presentation/content");
+const controller = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+const invoke = (fn: any, args: Doc) =>
+  fn.handler(ctx, fn === read ? { mode: "present", ...args } : args);
+
+beforeEach(() => {
+  rows.clear();
+  now = 1000;
+  Date.now = () => now;
+  userId = "owner";
+  scheduled = null;
+});
+afterEach(() => {
+  Date.now = realNow;
+});
+
+test("pins snapshot and schedules four-hour deletion", async () => {
+  const sessionId = await invoke(start, { controller });
+  expect(scheduled).toEqual({ delay: 14400000, args: { sessionId } });
+  const original = presentation.slides[0].title;
+  presentation.slides[0].title = "Edited later";
+  try {
+    const snapshot = await invoke(read, { sessionId, controller });
+    expect(snapshot.slides[0].title).toBe(original);
+    expect(snapshot.version).toBe("1");
+    expect(snapshot.notes).toEqual(presentation.slides[0].notes);
+  } finally {
+    presentation.slides[0].title = original;
+  }
+  await invoke(expire, { sessionId });
+  expect(rows.size).toBe(1);
+  now += 14400000;
+  expect(await invoke(read, { sessionId, controller })).toBeNull();
+  await expect(
+    invoke(control, { sessionId, controller, revision: 0, action: "next" }),
+  ).rejects.toThrow("denied");
+  await invoke(expire, { sessionId });
+  expect(rows.size).toBe(0);
+  await invoke(expire, { sessionId });
+});
+
+test("notes and controller are omitted from display, bounds and revision enforced", async () => {
+  const sessionId = await invoke(start, { controller });
+  const display = await invoke(read, { sessionId, controller, mode: "display" });
+  expect(display.notes).toBeNull();
+  expect(display.controller).toBeUndefined();
+  expect(display.canControl).toBe(true);
+  expect(display.slides.every((s: Doc) => !("notes" in s))).toBe(true);
+  const args = { sessionId, controller, revision: 0, action: "previous" };
+  await invoke(control, args);
+  expect((await invoke(read, { sessionId })).revision).toBe(0);
+  await invoke(control, { ...args, action: "next" });
+  await expect(invoke(control, { ...args, action: "next" })).rejects.toThrow(
+    "changed",
+  );
+  await invoke(control, { ...args, action: "next", revision: 1 });
+  await invoke(control, { ...args, action: "next", revision: 2 });
+  expect((await invoke(read, { sessionId })).slide).toBe(2);
+  expect((await invoke(read, { sessionId })).revision).toBe(2);
+});
+
+test("rejects anonymous and cross-user access, even with the controller ID", async () => {
+  const sessionId = await invoke(start, { controller });
+  userId = "other";
+  expect(await invoke(read, { sessionId, controller })).toBeNull();
+  await expect(
+    invoke(control, { sessionId, controller, revision: 0, action: "end" }),
+  ).rejects.toThrow("denied");
+  userId = null;
+  await expect(invoke(read, { sessionId })).rejects.toThrow(
+    "Not authenticated",
+  );
+  await expect(
+    invoke(start, { controller }),
+  ).rejects.toThrow("Not authenticated");
+});
+
+test("explicit owner takeover revokes old controls and notes, with revision checks", async () => {
+  const sessionId = await invoke(start, { controller });
+  const next = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
+  const args = { sessionId, controller: next, revision: 0 };
+  userId = "other";
+  await expect(invoke(takeControl, args)).rejects.toThrow("denied");
+  userId = null;
+  await expect(invoke(takeControl, args)).rejects.toThrow("Not authenticated");
+  userId = "owner";
+  await expect(invoke(takeControl, { ...args, controller: "bad" })).rejects.toThrow("Invalid");
+  await invoke(takeControl, args);
+  await expect(invoke(takeControl, { ...args, controller })).rejects.toThrow("changed");
+  const previous = await invoke(read, { sessionId, controller });
+  expect(previous.canControl).toBe(false);
+  expect(previous.notes).toBeNull();
+  await expect(invoke(control, { sessionId, controller, revision: 1, action: "next" })).rejects.toThrow("denied");
+  expect((await invoke(read, { sessionId, controller: next, mode: "display" })).notes).toBeNull();
+  await invoke(control, { sessionId, controller: next, revision: 1, action: "next" });
+  expect((await invoke(read, { sessionId, controller: next })).slide).toBe(1);
+  now += 14400000;
+  await expect(invoke(takeControl, { ...args, revision: 2 })).rejects.toThrow("denied");
+});

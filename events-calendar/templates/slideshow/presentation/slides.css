@@ -1,0 +1,6 @@
+.slideshow-slide { position: relative; display: flex; flex-direction: column; justify-content: center; aspect-ratio: 16 / 9; width: 100%; padding: 7%; overflow: hidden; background: #f2f0e8; color: #222722; container-type: inline-size; }
+.slideshow-slide h1 { font-size: clamp(20px, 7cqw, 100px); line-height: 1.08; letter-spacing: -.04em; font-weight: 650; margin: 6% 0; }
+.slideshow-slide > p:not(.slideshow-eyebrow) { font-size: clamp(12px, 3cqw, 36px); line-height: 1.5; }
+.slideshow-slide footer { position: absolute; bottom: 5%; right: 7%; font-size: 12px; }
+.slideshow-slide { font-family: system-ui, sans-serif; }
+.slideshow-slide .slideshow-eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 600; }

@@ -1,0 +1,29 @@
+.slideshow-unavailable { max-width: 900px; margin: 6vh auto; padding: 24px; }
+.slideshow-unavailable > h1 { font-size: clamp(32px, 5vw, 56px); font-weight: 650; letter-spacing: -.04em; margin: 12px 0; }
+.slideshow-unavailable > p { max-width: 60ch; color: var(--muted-foreground); }
+.slideshow-notes > .slideshow-eyebrow { font-size: 12px; font-weight: 500; letter-spacing: .01em; color: #7749ff; }
+.slideshow-session { position: fixed; inset: 0; z-index: 40; overflow: auto; padding: 32px; background: var(--background); color: var(--foreground); }
+.slideshow-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; align-items: center; padding-bottom: 32px; font-size: 14px; }
+.slideshow-toolbar a { text-decoration: none; }
+.slideshow-toolbar a:hover { text-decoration: underline; text-underline-offset: 4px; }
+.slideshow-toolbar a:focus-visible, .slideshow-thumbnail:focus-visible { outline: 2px solid #7749ff; outline-offset: 4px; }
+.slideshow-presenter { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.slideshow-thumbnail { display: block; width: 100%; text-align: left; border: 1px solid var(--border); cursor: pointer; }
+.slideshow-thumbnail:disabled { cursor: default; }
+.slideshow-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+.slideshow-hint { margin-top: 12px; font-size: 12px; color: var(--muted-foreground); }
+.slideshow-notes { padding: 12px 0; }
+.slideshow-notes ul { list-style: disc; padding-left: 24px; margin-top: 24px; font-size: clamp(20px, 2.5vw, 32px); line-height: 1.6; }
+.slideshow-notes li + li { margin-top: 20px; }
+.slideshow-display { padding: 0; background: #1b182a; display: grid; place-items: center; }
+.slideshow-display > .slideshow-slide { width: min(100vw, 177.777vh); }
+.slideshow-display > [role=alert] { position: absolute; z-index: 1; top: 0; }
+.slideshow-display-controls { position: absolute; bottom: 16px; right: 16px; left: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; padding: 8px; background: var(--background); border: 1px solid var(--border); border-radius: 8px; width: fit-content; max-width: calc(100% - 32px); margin-inline: auto; font-size: 12px; }
+@media (max-width: 750px) {
+  .slideshow-session { padding: 16px; }
+  .slideshow-presenter { grid-template-columns: 1fr; gap: 16px; }
+  .slideshow-toolbar { padding-bottom: 20px; }
+  .slideshow-display { padding: 0; }
+}
+.slideshow-wordmark { width: auto; height: 20px; }
+.slideshow-home { display: flex; align-items: center; gap: 24px; }
