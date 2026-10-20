@@ -1,6 +1,6 @@
 /** Sister site: the live Tampa events calendar. */
 export const EVENTS_URL: string =
-  import.meta.env.VITE_EVENTS_URL || "https://tampa-events-justin-s-team.viktor.space";
+  import.meta.env.VITE_EVENTS_URL || "https://tampa-events.pages.dev";
 export const EVENTS_WEEKEND_URL = `${EVENTS_URL}/?date=weekend`;
 export const EVENTS_SUBMIT_URL = `${EVENTS_URL}/submit-event`;
 

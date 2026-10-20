@@ -87,7 +87,7 @@ export const SECTION_SPECS: SectionSpec[] = [
     min: 300,
     max: 1600,
     brief:
-      "First line: '>> Picked from our Tampa events calendar.' Then events grouped by day: a '**Wednesday, Oct. 14**' line per day, then one line per event: 'emoji [Event name](url) | Venue | Time | Price'. A standout free, family or date-night event may start with '[[FREE PICK]] ', '[[FAMILY PICK]] ' or '[[DATE NIGHT PICK]] ' and be followed by a '> one-line reason to care' line. Last line: 'For the full list, check out our [Tampa events calendar](https://tampa-events-justin-s-team.viktor.space).'",
+      "First line: '>> Picked from our Tampa events calendar.' Then events grouped by day: a '**Wednesday, Oct. 14**' line per day, then one line per event: 'emoji [Event name](url) | Venue | Time | Price'. A standout free, family or date-night event may start with '[[FREE PICK]] ', '[[FAMILY PICK]] ' or '[[DATE NIGHT PICK]] ' and be followed by a '> one-line reason to care' line. Last line: 'For the full list, check out our [Tampa events calendar](https://tampa-events.pages.dev).'",
     storySections: ["Events"],
   },
   {
@@ -192,8 +192,8 @@ export function checkRules(md: string, key: string): RuleCheck {
 export const HEADING_COLOR = "#0b6e99";
 export const GRAY = "#52606d";
 export const SLOT_HL = "#fff3bf";
-export const EVENTS_CAL_URL = "https://tampa-events-justin-s-team.viktor.space";
-export const DIRECTORY_LINK_URL = "https://tampa-directory-justin-s-team.viktor.space";
+export const EVENTS_CAL_URL = "https://tampa-events.pages.dev";
+export const DIRECTORY_LINK_URL = "https://tampa-directory.pages.dev";
 
 export type Run = {
   text: string;

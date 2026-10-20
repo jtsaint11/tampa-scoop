@@ -7,8 +7,8 @@
 // ---------------------------------------------------------------- config
 
 /** Live sibling sites. Change DIRECTORY_URL here when the directory goes to production. */
-export const EVENTS_URL = "https://tampa-events-justin-s-team.viktor.space";
-export const DIRECTORY_URL = "https://tampa-directory-justin-s-team.viktor.space";
+export const EVENTS_URL = "https://tampa-events.pages.dev";
+export const DIRECTORY_URL = "https://tampa-directory.pages.dev";
 
 /** UTM source/medium used on every exported link. */
 export const UTM_SOURCE = "tampascoop";

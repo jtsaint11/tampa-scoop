@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 export const SCOOP_HOME_URL = "https://tampascoop.beehiiv.com";
 export const SCOOP_SUBSCRIBE_URL = "https://tampascoop.beehiiv.com/subscribe";
 export const SCOOP_EVENTS_URL: string =
-  import.meta.env.VITE_EVENTS_URL || "https://tampa-events-justin-s-team.viktor.space";
+  import.meta.env.VITE_EVENTS_URL || "https://tampa-events.pages.dev";
 export const SCOOP_DIRECTORY_URL: string =
-  import.meta.env.VITE_DIRECTORY_URL || "https://tampa-directory-justin-s-team.viktor.space";
+  import.meta.env.VITE_DIRECTORY_URL || "https://tampa-directory.pages.dev";
 
 type Current = "events" | "directory";
 
