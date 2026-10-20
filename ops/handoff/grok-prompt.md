@@ -35,8 +35,8 @@ A Google Sheets workbook ("Tampa Scoop", ID 1tuk50-uXXDLKMIWuUUN-4seIeG0HRyWQm5F
 **beehiiv (newsletter platform):** publication ID pub_70361159-9f75-498c-a7a5-88cf427f2cf0, site https://tampascoop.beehiiv.com (free plan, Atlas Collective theme). The default email post template is "The Tampa Scoop — weekly issue" (post_template_18dad33c-1ef9-4730-980a-eded3c7e114d). Issue #1 (post_c2f9572a-81d7-44ab-abb9-ddca155945b5) is the layout to copy for every new issue. When creating drafts through the API, use the structured `blocks` field with that template. Never put the whole issue in `body_content`, because it turns into one locked HTML block Justin can't edit. Double opt-in is off on purpose (no 6-digit code for subscribers). Justin always sends; you only ever create drafts.
 
 **Websites (built on Viktor Spaces; they read Smartsheet live):**
-- Events calendar: https://tampa-events-justin-s-team.viktor.space
-- Business directory: https://tampa-directory-justin-s-team.viktor.space
+- Events calendar: https://tampa-events.pages.dev
+- Business directory: https://tampa-directory.pages.dev
 - Scoop Desk (Justin's issue-writing tool): https://tampa-desk-justin-s-team.viktor.space
 
 **Buffer (social scheduling, free plan, 10 scheduled posts per channel):** channel @thetampascoop (ID 6ad65002778b240e2f5b775c). Scheduled (Eastern): Oct 20 12pm, Oct 21 12pm, Oct 22 7pm, Oct 24 10am, Oct 26 7pm, Oct 27 9am, Oct 28 12pm, Oct 29 12pm, Oct 31 10am. The post images are hosted on the directory site at /assets/ig/. Those files must stay online until Oct 31. Buffer can't pin posts, so Justin pins post 1 by hand after it goes up. Justin's other Buffer channels (@thetampawellnessguide, X @thebtchodlr) are not part of this business. Leave them alone.
