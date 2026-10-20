@@ -137,6 +137,56 @@ export const SHEET_IDS: Record<string, string> = {
 
 export type SsRow = Record<string, unknown>;
 
+// ---- Direct Smartsheet REST (replaces the Viktor tool gateway) ----
+const SS_API = "https://api.smartsheet.com/2.0";
+
+/** Calls Smartsheet with SMARTSHEET_TOKEN; keeps 15+ digit ids as strings. */
+async function ssFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = process.env.SMARTSHEET_TOKEN;
+  if (!token) throw new GatewayError("SMARTSHEET_TOKEN is not set", "unreachable");
+  let response: Response;
+  try {
+    response = await fetch(`${SS_API}${path}`, {
+      ...init,
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...(init.headers ?? {}) },
+    });
+  } catch (error) {
+    throw new GatewayError(`Smartsheet unreachable: ${String(error)}`, "unreachable");
+  }
+  const text = await response.text();
+  if (!response.ok) throw new GatewayError(`Smartsheet HTTP ${response.status}: ${text.slice(0, 500)}`, "tool_error");
+  const safe = text.replace(/"(id|rowId|columnId)"\s*:\s*(\d{15,})/g, '"$1":"$2"');
+  return JSON.parse(safe) as T;
+}
+
+type RawSheet = {
+  columns: { id: string; title: string; type: string }[];
+  rows: { id: string; rowNumber: number; cells: { columnId: string; value?: unknown }[] }[];
+};
+
+const columnCache = new Map<string, Map<string, string>>();
+async function columnIds(sheetName: string): Promise<Map<string, string>> {
+  const hit = columnCache.get(sheetName);
+  if (hit) return hit;
+  const res = await ssFetch<{ data: { id: string; title: string }[] }>(
+    `/sheets/${sheetIdFor(sheetName)}/columns?includeAll=true`,
+  );
+  const map = new Map(res.data.map(c => [c.title, String(c.id)]));
+  columnCache.set(sheetName, map);
+  return map;
+}
+
+function toCells(o: Record<string, unknown>, cols: Map<string, string>) {
+  return Object.entries(o)
+    .filter(([k]) => k !== "rowId")
+    .map(([k, value]) => {
+      const columnId = cols.get(k);
+      if (!columnId) throw new GatewayError(`Unknown column "${k}"`, "tool_error");
+      return { columnId, value: value === "" ? "" : value, strict: false };
+    });
+}
+
+
 function sheetIdFor(sheetName: string): string {
   const id = SHEET_IDS[sheetName];
   if (!id) throw new GatewayError(`Unknown sheet ${sheetName}`, "tool_error");
@@ -154,18 +204,27 @@ function parseSmartsheet<T>(result: unknown): T {
 }
 
 type SsSheet = {
-  columns: { title: string; type: string }[];
+  columns: { id?: string; title: string; type: string }[];
   rows: { id: string | number; rowNumber: number; cellsByName?: Record<string, unknown> }[];
 };
 
 async function getSheet(sheetName: string): Promise<SsSheet> {
-  const res = await callTool("mcp_pd_smartsheet_get_sheet", { sheetId: sheetIdFor(sheetName), pageSize: 5000 });
-  const parsed = parseSmartsheet<SsSheet & { result?: SsSheet }>(res);
-  const sheet = parsed && !Array.isArray(parsed.rows) && parsed.result ? parsed.result : parsed;
-  if (!sheet || !Array.isArray(sheet.rows) || !Array.isArray(sheet.columns)) {
+  const raw = await ssFetch<RawSheet>(`/sheets/${sheetIdFor(sheetName)}?pageSize=5000`);
+  if (!raw || !Array.isArray(raw.rows) || !Array.isArray(raw.columns)) {
     throw new GatewayError(`Unexpected response reading ${sheetName} (no rows array)`, "tool_error");
   }
-  return sheet;
+  const titleById = new Map(raw.columns.map(c => [String(c.id), c.title]));
+  return {
+    columns: raw.columns,
+    rows: raw.rows.map(r => {
+      const cellsByName: Record<string, unknown> = {};
+      for (const c of r.cells ?? []) {
+        const t = titleById.get(String(c.columnId));
+        if (t) cellsByName[t] = c.value;
+      }
+      return { id: r.id, rowNumber: r.rowNumber, cellsByName };
+    }),
+  };
 }
 
 /**
@@ -206,10 +265,12 @@ export async function addRows(
     for (const [k, val] of Object.entries(row)) if (val !== "" && val !== undefined && val !== null) o[k] = toCell(val);
     return o;
   });
-  const res = await callTool("mcp_pd_smartsheet_add_row_to_sheet", { sheetId: sheetIdFor(sheetName), rows: JSON.stringify(body) });
-  const parsed = parseSmartsheet<unknown>(res) as { result?: unknown } | unknown[];
-  const list = Array.isArray(parsed) ? parsed : Array.isArray((parsed as { result?: unknown })?.result) ? ((parsed as { result: unknown[] }).result) : [];
-  return (list as { id?: unknown; rowNumber?: unknown }[]).map(x => ({ id: String(x.id ?? ""), rowNumber: Number(x.rowNumber) || 0 }));
+  const cols = await columnIds(sheetName);
+  const res = await ssFetch<{ result: { id: string; rowNumber: number }[] }>(`/sheets/${sheetIdFor(sheetName)}/rows`, {
+    method: "POST",
+    body: JSON.stringify(body.map(o => ({ toBottom: true, cells: toCells(o, cols) }))),
+  });
+  return (res.result ?? []).map(x => ({ id: String(x.id ?? ""), rowNumber: Number(x.rowNumber) || 0 }));
 }
 
 /** Updates rows in place by row id ("" clears a cell). */
@@ -219,12 +280,14 @@ export async function updateRows(sheetName: string, rows: ({ rowId: string } & R
     for (const [k, val] of Object.entries(row)) if (k !== "rowId") o[k] = toCell(val);
     return o;
   });
-  const res = await callTool("mcp_pd_smartsheet_update_row", { sheetId: sheetIdFor(sheetName), rows: JSON.stringify(body) });
-  parseSmartsheet(res);
+  const cols = await columnIds(sheetName);
+  await ssFetch(`/sheets/${sheetIdFor(sheetName)}/rows`, {
+    method: "PUT",
+    body: JSON.stringify(body.map(o => ({ id: String(o.rowId), cells: toCells(o, cols) }))),
+  });
 }
 
 /** Permanently deletes rows by id (may be held for approval: throws GatewayError then). */
 export async function deleteRows(sheetName: string, rowIds: string[]): Promise<void> {
-  const res = await callTool("mcp_pd_smartsheet_delete_rows", { sheetId: sheetIdFor(sheetName), rowIds: rowIds.join(",") });
-  parseSmartsheet(res);
+  await ssFetch(`/sheets/${sheetIdFor(sheetName)}/rows?ids=${rowIds.join(",")}`, { method: "DELETE" });
 }
