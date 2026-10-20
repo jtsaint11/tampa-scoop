@@ -1,6 +1,6 @@
 import { useConvexAuth } from "convex/react";
 import { Navigate, Outlet, useLocation } from "react-router";
-import { resolveSignedInReturn } from "@/auth/oauthReturn";
+import { resolveSignedInReturn } from "@/auth/returnPath";
 import { Card, Skeleton } from "@/ui";
 
 function AuthFormSkeleton() {

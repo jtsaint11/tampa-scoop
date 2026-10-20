@@ -20,14 +20,11 @@ const tabs = JSON.parse(await Bun.file("/work/bots/tampa-newsletter/desk/tabs_sc
 
 describe("access", () => {
   test("only the exact editor email", () => {
-    expect(isAllowedDeskUser("jtsaint11@gmail.com", false)).toBe(true);
-    expect(isAllowedDeskUser("JTSaint11@Gmail.com ", false)).toBe(true);
-    expect(isAllowedDeskUser("someone@gmail.com", false)).toBe(false);
-    expect(isAllowedDeskUser("jtsaint11@gmail.com.evil.com", false)).toBe(false);
-    expect(isAllowedDeskUser("", false)).toBe(false);
-    expect(isAllowedDeskUser("space-session-abc@viktor.invalid", false)).toBe(false);
-    expect(isAllowedDeskUser("space-session-abc@viktor.invalid", true)).toBe(true);
-    expect(isAllowedDeskUser("x@viktor.invalid", true)).toBe(false);
+    expect(isAllowedDeskUser("jtsaint11@gmail.com")).toBe(true);
+    expect(isAllowedDeskUser("JTSaint11@Gmail.com ")).toBe(true);
+    expect(isAllowedDeskUser("someone@gmail.com")).toBe(false);
+    expect(isAllowedDeskUser("jtsaint11@gmail.com.evil.com")).toBe(false);
+    expect(isAllowedDeskUser("")).toBe(false);
   });
 });
 

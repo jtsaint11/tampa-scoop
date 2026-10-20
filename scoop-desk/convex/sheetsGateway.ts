@@ -1,7 +1,6 @@
 /**
- * Thin wrapper around the Viktor tool gateway (same pattern as the events
- * calendar and directory Spaces). Server-side only: never exported as a
- * Convex function, so the project secret never reaches a client.
+ * Server-side Smartsheet client (direct REST API, token in SMARTSHEET_TOKEN).
+ * Never exported as a Convex function, so the token never reaches a client.
  */
 declare const process: { env: Record<string, string | undefined> };
 
@@ -16,61 +15,7 @@ export class GatewayError extends Error {
   }
 }
 
-export async function callTool<T = unknown>(role: string, args: Record<string, unknown>): Promise<T> {
-  const url = process.env.VIKTOR_SPACES_API_URL;
-  let response: Response;
-  try {
-    response = await fetch(`${url}/api/viktor-spaces/tools/call`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        project_name: process.env.VIKTOR_SPACES_PROJECT_NAME,
-        project_secret: process.env.VIKTOR_SPACES_PROJECT_SECRET,
-        space_id: process.env.VIKTOR_AUTH_RESOURCE_ID,
-        role,
-        arguments: args,
-      }),
-    });
-  } catch (error) {
-    throw new GatewayError(`Tool gateway unreachable: ${String(error)}`, "unreachable");
-  }
-  if (!response.ok) {
-    throw new GatewayError(
-      `Tool gateway HTTP ${response.status}: ${(await response.text()).slice(0, 500)}`,
-      "unreachable",
-    );
-  }
-  const json = (await response.json()) as { success: boolean; error?: string; result?: unknown };
-  if (!json.success) {
-    const msg = json.error ?? "Tool call failed";
-    throw new GatewayError(msg, /Unable to parse range/i.test(msg) ? "no_tab" : "tool_error");
-  }
-  return json.result as T;
-}
 
-/** Integration tools return { content: "<json string>" }, a draft, or a tool_error. */
-export function parseIntegrationContent<T>(result: unknown): T {
-  const r = result as { content?: unknown; error?: string; response_role?: string; draft_id?: string };
-  if (r && typeof r === "object") {
-    if (r.draft_id) {
-      throw new GatewayError(`Write was turned into a draft that needs approval (draft ${r.draft_id})`, "needs_approval");
-    }
-    if (r.response_role === "tool_error" || (r.error && !r.content)) {
-      const msg = r.error ?? "Integration tool error";
-      if (/Unable to parse range/i.test(msg)) throw new GatewayError(msg, "no_tab");
-      throw new GatewayError(msg, "tool_error");
-    }
-    if (typeof r.content === "string") {
-      try {
-        return JSON.parse(r.content) as T;
-      } catch {
-        return r.content as unknown as T;
-      }
-    }
-    if (r.content !== undefined) return r.content as T;
-  }
-  return result as T;
-}
 
 export type Row = Record<string, unknown>;
 
@@ -193,15 +138,6 @@ function sheetIdFor(sheetName: string): string {
   return id;
 }
 
-/** Parses tool content keeping 15+ digit ids as strings (they overflow JS numbers). */
-function parseSmartsheet<T>(result: unknown): T {
-  const r = result as { content?: unknown };
-  if (r && typeof r === "object" && typeof r.content === "string") {
-    const safe = r.content.replace(/"(id|rowId)"\s*:\s*(\d{15,})/g, '"$1":"$2"');
-    return parseIntegrationContent<T>({ ...(r as object), content: safe });
-  }
-  return parseIntegrationContent<T>(result);
-}
 
 type SsSheet = {
   columns: { id?: string; title: string; type: string }[];

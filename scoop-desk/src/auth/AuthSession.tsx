@@ -2,13 +2,7 @@ import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import type { ReactNode } from "react";
 import { convex } from "@/auth/convexClient";
 
-export function ViktorProductAuthProvider({
-  children,
-  enabled,
-}: {
-  children: ReactNode;
-  enabled: boolean;
-}) {
-  if (!enabled) return <>{children}</>;
+/** Convex Auth (email + password) session for the private Desk. */
+export function AuthSession({ children }: { children: ReactNode }) {
   return <ConvexAuthProvider client={convex}>{children}</ConvexAuthProvider>;
 }

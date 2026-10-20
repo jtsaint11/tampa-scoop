@@ -1,4 +1,3 @@
-import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
@@ -16,7 +15,6 @@ import { v } from "convex/values";
  *   simultaneous requests never target the same sheet row.
  */
 const schema = defineSchema({
-  ...authTables,
   directoryCache: defineTable({
     key: v.string(),
     fetchedAt: v.number(),

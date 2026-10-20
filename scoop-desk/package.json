@@ -1,5 +1,5 @@
 {
-  "name": "convex-vite-starter",
+  "name": "scoop-desk",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -19,15 +19,8 @@
     "logs": "bunx convex logs",
     "logs:fetch": "bun run --bun scripts/logs.ts",
     "test": "bun run --bun scripts/test.ts",
-    "test:auth": "bun run --bun scripts/auth.ts",
     "test:demo": "bun run --bun scripts/demo-test.ts",
     "test:design-review": "bun test scripts/design-review-specimen.test.ts",
-    "test:viktor-spaces-access": "bun test scripts/viktor-spaces-access.test.tsx && bun test scripts/convex-auth-contract.test.ts && bun test scripts/membership-recheck.test.ts && bun test scripts/viktor-embed-bridge.test.ts",
-    "test:phi-redaction": "bun test scripts/phi-console-redaction.test.ts",
-    "test:phi-functions": "bun test scripts/phi-authenticated-functions.test.ts",
-    "check:phi-functions": "bun run --bun scripts/check-phi-authenticated-functions.ts",
-    "generate:phi-statics": "bun run --bun scripts/generate-phi-console-statics.ts",
-    "screenshot": "bun run --bun /work/.viktor-spaces-internal/tampa-desk-2289abbab251-bddb1eea5aaeca39/screenshot.ts",
     "design:review": "bun run --bun scripts/design-review.ts",
     "env:get": "bunx convex env get",
     "env:list": "bunx convex env list"

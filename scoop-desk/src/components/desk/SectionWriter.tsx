@@ -6,14 +6,11 @@ import {
   Copy,
   Mail,
   Plus,
-  RefreshCw,
   RotateCcw,
   Save,
   Send,
-  Sparkles,
   TriangleAlert,
   Undo2,
-  Wand2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -102,7 +99,7 @@ export function SectionWriter({ issueId }: { issueId: string }) {
         </p>
       )}
 
-      <SubjectCard issue={issue} approvedCount={approved} />
+      <SubjectCard issue={issue} />
 
       <div className={cn(ui.card, "p-5")} data-testid="progress">
         <div className="mb-2 flex items-center justify-between text-sm font-semibold">
@@ -146,12 +143,10 @@ export function SectionWriter({ issueId }: { issueId: string }) {
   );
 }
 
-function SubjectCard({ issue, approvedCount }: { issue: Doc<"issues">; approvedCount: number }) {
+function SubjectCard({ issue }: { issue: Doc<"issues"> }) {
   const update = useMutation(api.issues.update);
-  const regen = useAction(api.sections.regenerateSubjects);
   const [subject, setSubject] = useState(issue.subject);
   const [preview, setPreview] = useState(issue.previewText);
-  const [busy, setBusy] = useState(false);
   useEffect(() => setSubject(issue.subject), [issue.subject]);
   useEffect(() => setPreview(issue.previewText), [issue.previewText]);
 
@@ -165,23 +160,6 @@ function SubjectCard({ issue, approvedCount }: { issue: Doc<"issues">; approvedC
         <h2 className="flex items-center gap-2 text-lg">
           <Mail className="size-4" /> Subject line and preview
         </h2>
-        <Button
-          className={btn("outline", "h-8 px-3")}
-          data-testid="regen-subjects"
-          disabled={busy}
-          onClick={async () => {
-            if (!approvedCount) return toast.error("Approve at least one section first.");
-            setBusy(true);
-            try {
-              const r = await regen({ issueId: issue.issueId });
-              if (!r.ok) toast.error(r.message);
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <RefreshCw className={cn("size-4", busy && "animate-spin")} /> {busy ? "Writing…" : "Regenerate"}
-        </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="space-y-1 text-sm">
@@ -261,14 +239,14 @@ function SectionCard({ issueId, section, stories }: { issueId: string; section: 
   const approve = useMutation(api.sections.approve);
   const unapprove = useMutation(api.sections.unapprove);
   const startOver = useMutation(api.sections.startOver);
-  const write = useAction(api.sections.write);
+  const pasteApproved = useMutation(api.sections.pasteApproved);
+  const [pasted, setPasted] = useState("");
   const [command, setCommand] = useState(section.command);
   const [outline, setOutline] = useState(section.outline);
   const [notes, setNotes] = useState(section.notes);
   const [picked, setPicked] = useState<string[]>(section.storyIds);
   const [showCtx, setShowCtx] = useState(false);
   const [approvedText, setApprovedText] = useState(section.approvedText);
-  const [busy, setBusy] = useState(false);
   useEffect(() => setCommand(section.command), [section.command]);
   useEffect(() => setOutline(section.outline), [section.outline]);
   useEffect(() => setNotes(section.notes), [section.notes]);
@@ -277,20 +255,6 @@ function SectionCard({ issueId, section, stories }: { issueId: string; section: 
 
   const hasDrafts = SECTION_TONES.some(t => section.drafts[t].trim());
   const base = { issueId, key: section.key };
-
-  const run = async () => {
-    setBusy(true);
-    try {
-      // Save what's typed first so the writer sees it.
-      await patch({ ...base, command, outline, notes, storyIds: picked });
-      const r = await write(base);
-      if (!r.ok) toast.error(r.message);
-    } catch {
-      toast.error("The AI writer is unavailable right now.");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const best = section.approvedText || section.drafts.Deep || section.drafts.Punchy || section.drafts.Straight;
 
@@ -324,10 +288,6 @@ function SectionCard({ issueId, section, stories }: { issueId: string; section: 
             }}
           >
             <RotateCcw className="size-4" /> Start over
-          </Button>
-          <Button className={btn("primary", "h-8 px-3")} data-testid="rewrite" disabled={busy} onClick={run}>
-            {hasDrafts ? <Wand2 className="size-4" /> : <Sparkles className="size-4" />}
-            {busy ? "Writing…" : hasDrafts ? "Rewrite" : "Write drafts"}
           </Button>
         </div>
       </div>
@@ -417,9 +377,30 @@ function SectionCard({ issueId, section, stories }: { issueId: string; section: 
           ))}
         </div>
       ) : (
-        <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-          {busy ? "Writing Deep, Punchy and Straight drafts…" : "No drafts yet. Add context if you need to, then click Write drafts."}
-        </p>
+        !section.approvedTone && (
+          <div className="space-y-2 rounded-lg border border-dashed p-4" data-testid="paste-panel">
+            <p className="text-sm text-muted-foreground">No drafts yet. Paste this section's finished text, then approve it.</p>
+            <textarea
+              className={cn(ui.input, "min-h-32")}
+              data-testid="paste-text"
+              value={pasted}
+              onChange={e => setPasted(e.target.value)}
+            />
+            <RuleNotes text={pasted} k={section.key} />
+            <Button
+              className={btn("primary", "h-8 px-3")}
+              data-testid="paste-approve"
+              disabled={!pasted.trim()}
+              onClick={async () => {
+                await pasteApproved({ ...base, text: pasted });
+                setPasted("");
+                toast.success("Approved copy saved");
+              }}
+            >
+              <Save className="size-4" /> Save and approve
+            </Button>
+          </div>
+        )
       )}
 
       {section.approvedTone && (

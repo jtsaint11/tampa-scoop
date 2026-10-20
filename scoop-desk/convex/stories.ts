@@ -2,14 +2,12 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, internalQuery } from "./_generated/server";
-import { authenticatedAction, authenticatedMutation, authenticatedQuery } from "./functions";
+import { authenticatedMutation, authenticatedQuery } from "./functions";
 import {
   type Claim,
   checkDraft,
-  countWords,
   findVerifyFlags,
   type IntakeFields,
-  isHttpUrl,
   MODULE_TEMPLATES,
   PROMPT_SKELETON,
   REQUIRED_DETAILS,
@@ -19,13 +17,9 @@ import {
   type Tone,
   VOICE_GUIDE,
   validateIntake,
-  wordRange,
 } from "./lib/desk";
 import { todayInTampa } from "./lib/tampa";
-import { callTool, GatewayError } from "./sheetsGateway";
 
-/** AI model used for drafts (tool gateway: ai_structured_output). */
-export const DRAFT_MODEL = "claude-sonnet-5";
 
 const intakeArgs = {
   issueDate: v.string(),
@@ -300,24 +294,6 @@ export function buildDraftPrompt(s: Pick<Doc<"stories">, "tone" | "section" | "r
     .join("\n");
 }
 
-const DRAFT_SCHEMA = {
-  type: "object",
-  properties: {
-    headline: { type: "string" },
-    body: { type: "string" },
-    why_it_matters: { type: "string" },
-    verify_fields: { type: "array", items: { type: "string" } },
-    claims: {
-      type: "array",
-      items: {
-        type: "object",
-        properties: { claim: { type: "string" }, source_url: { type: "string" } },
-        required: ["claim", "source_url"],
-      },
-    },
-  },
-  required: ["headline", "body", "why_it_matters", "verify_fields", "claims"],
-};
 
 /** Post-process the model output: keep VERIFY markers visible, map claims to given URLs only. */
 export function finishDraft(ai: AiDraft, sourceUrls: string[]) {
@@ -340,76 +316,3 @@ export function finishDraft(ai: AiDraft, sourceUrls: string[]) {
   return { headline: String(ai.headline ?? "").trim(), body, claims, why, notes };
 }
 
-export const draftStory = authenticatedAction({
-  args: { storyId: v.string() },
-  returns: v.union(
-    v.object({ ok: v.literal(true), wordCount: v.number(), verifyFlags: v.array(v.string()) }),
-    v.object({ ok: v.literal(false), message: v.string() }),
-  ),
-  handler: async (ctx, { storyId }) => {
-    const s = await ctx.runQuery(internal.stories.getInternal, { storyId });
-    if (!s) return { ok: false as const, message: "Story not found." };
-    if (s.sponsor) return { ok: false as const, message: "Sponsor copy is approved copy; it is used word for word." };
-    const urls = splitLines(s.sourceUrls).filter(isHttpUrl);
-    const facts = splitLines(s.factBullets);
-    if (!facts.length || !urls.length) return { ok: false as const, message: "Add fact bullets and a source URL first." };
-
-    const prompt = buildDraftPrompt(s);
-    const input = [
-      `ISSUE DATE: ${s.issueDate}`,
-      `SECTION: ${s.section}`,
-      "FACT BULLETS:",
-      ...facts.map(f => `- ${f}`),
-      "SOURCE URLS (primary first):",
-      ...urls,
-    ].join("\n");
-
-    let result: { result?: AiDraft | null; error?: string | null };
-    try {
-      result = await callTool("ai_structured_output", {
-        prompt,
-        input_text: input,
-        output_schema: DRAFT_SCHEMA,
-        intelligence_level: "fast",
-        model: DRAFT_MODEL,
-      });
-    } catch (e) {
-      console.error("AI draft failed", e);
-      return {
-        ok: false as const,
-        message:
-          e instanceof GatewayError ? `The AI writer is unavailable right now (${e.code}). Try again in a minute.` : "Drafting failed.",
-      };
-    }
-    if (!result?.result || result.error) {
-      return { ok: false as const, message: `The AI writer returned no draft${result?.error ? `: ${result.error}` : ""}.` };
-    }
-    const done = finishDraft(result.result, urls);
-    const warnings = [
-      ...done.notes,
-      ...checkDraft({
-        draft: done.body,
-        facts: facts.join("\n"),
-        sourceUrls: urls,
-        claims: done.claims,
-        tone: s.tone,
-        sponsor: false,
-      }),
-    ];
-    await ctx.runMutation(internal.stories.applyAiDraft, {
-      storyId,
-      headline: done.headline,
-      draft: done.body,
-      claims: done.claims,
-      warnings,
-      model: DRAFT_MODEL,
-    });
-    const { min, max } = wordRange(s.tone, false);
-    console.log(`Draft ${storyId}: ${countWords(done.body)} words (range ${min}-${max})`);
-    return {
-      ok: true as const,
-      wordCount: countWords(done.body),
-      verifyFlags: findVerifyFlags(`${done.headline}\n${done.body}`),
-    };
-  },
-});

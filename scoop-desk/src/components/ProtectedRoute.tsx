@@ -1,9 +1,6 @@
 import { useConvexAuth } from "convex/react";
 import { Navigate, Outlet, useLocation } from "react-router";
-import {
-  BOUNCED_FROM_STATE_KEY,
-  stripAutoSignInIntent,
-} from "@/auth/oauthReturn";
+import { BOUNCED_FROM_STATE_KEY } from "@/auth/returnPath";
 import { Skeleton } from "@/ui";
 
 function AppSkeleton() {
@@ -55,10 +52,7 @@ export function ProtectedRoute() {
         to="/login"
         replace
         state={{
-          [BOUNCED_FROM_STATE_KEY]: stripAutoSignInIntent(
-            location.pathname,
-            location.search,
-          ),
+          [BOUNCED_FROM_STATE_KEY]: `${location.pathname}${location.search}`,
         }}
       />
     );

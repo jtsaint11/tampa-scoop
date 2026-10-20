@@ -1,39 +1,7 @@
 import { Link } from "react-router";
 import { SignIn } from "@/components/SignIn";
-import { ViktorSignInSection } from "@/components/ViktorSignInSection";
-import {
-  getEmailPasswordSignInAvailable,
-  getViktorSignInAvailable,
-} from "@/lib/viktor-spaces-access/config";
-
-function getLoginProviderState(): {
-  emailPasswordAvailable: boolean;
-  viktorSignInAvailable: boolean;
-  invalidProviderConfiguration: boolean;
-} {
-  try {
-    return {
-      emailPasswordAvailable: getEmailPasswordSignInAvailable(),
-      viktorSignInAvailable: getViktorSignInAvailable(),
-      invalidProviderConfiguration: false,
-    };
-  } catch {
-    return {
-      emailPasswordAvailable: false,
-      viktorSignInAvailable: false,
-      invalidProviderConfiguration: true,
-    };
-  }
-}
 
 export function LoginPage() {
-  const {
-    emailPasswordAvailable,
-    viktorSignInAvailable,
-    invalidProviderConfiguration,
-  } = getLoginProviderState();
-  const signInUnavailable = !emailPasswordAvailable && !viktorSignInAvailable;
-
   return (
     <div className="flex-1 flex items-center justify-center p-4 relative">
       <div className="absolute inset-0 -z-10 overflow-hidden">
@@ -50,17 +18,9 @@ export function LoginPage() {
           </p>
         </div>
 
-        {!invalidProviderConfiguration && <ViktorSignInSection />}
-        {emailPasswordAvailable && <SignIn />}
-        {signInUnavailable && (
-          <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2 text-center">
-            {invalidProviderConfiguration
-              ? "Sign-in is unavailable: this app has no valid sign-in provider configuration. Contact the app owner."
-              : 'Sign-in is unavailable: this app only offers "Sign in with Viktor", but its Viktor sign-in configuration is missing from this build. Contact the app owner.'}
-          </p>
-        )}
+        <SignIn />
 
-        {emailPasswordAvailable && (
+        {(
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
             <Link

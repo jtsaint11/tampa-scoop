@@ -1,15 +1,21 @@
 import { ALLOWED_EMAILS } from "./desk";
 
+declare const process: { env: Record<string, string | undefined> };
+
 /**
- * True only for the Desk editor's exact email address (not the domain).
- * `allowAutomation` admits the Viktor automation identity used by e2e tests
- * and screenshots (a backend-minted, single-use session for this Space only;
- * its synthetic address can never be signed up for). It is switched on with
- * the DESK_ALLOW_AUTOMATION env var on the dev/preview backend only.
+ * The Desk is private: only these exact email addresses may sign up or sign in.
+ * Defaults to ALLOWED_EMAILS; DESK_ALLOWED_EMAILS (comma-separated) on the
+ * Convex deployment overrides it.
  */
-export function isAllowedDeskUser(email: string | undefined | null, allowAutomation: boolean): boolean {
+export function allowedDeskEmails(): string[] {
+  const fromEnv = (process.env.DESK_ALLOWED_EMAILS ?? "")
+    .split(",")
+    .map(e => e.trim().toLowerCase())
+    .filter(Boolean);
+  return fromEnv.length ? fromEnv : [...ALLOWED_EMAILS];
+}
+
+export function isAllowedDeskUser(email: string | undefined | null): boolean {
   const e = (email ?? "").trim().toLowerCase();
-  if (!e) return false;
-  if ((ALLOWED_EMAILS as readonly string[]).includes(e)) return true;
-  return allowAutomation && /^space-session-[^@]+@viktor\.invalid$/.test(e);
+  return !!e && allowedDeskEmails().includes(e);
 }

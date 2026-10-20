@@ -1,10 +1,7 @@
 import { Link } from "react-router";
 import { SignUp } from "@/components/SignUp";
-import { ViktorSignInSection } from "@/components/ViktorSignInSection";
-import { getEmailPasswordSignInAvailable } from "@/lib/viktor-spaces-access/config";
 
 export function SignupPage() {
-  const emailPasswordAvailable = getEmailPasswordSignInAvailable();
 
   return (
     <div className="flex-1 flex items-center justify-center p-4 relative">
@@ -16,20 +13,19 @@ export function SignupPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-2">
           <div className="mx-auto size-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-            <span className="text-primary-foreground font-bold text-lg">M</span>
+            <span className="text-primary-foreground font-bold text-lg">S</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight">
             Create an account
           </h1>
           <p className="text-muted-foreground text-sm">
-            Get started with your free account
+            Only the editor's email can create the Desk account
           </p>
         </div>
 
-        <ViktorSignInSection />
-        {emailPasswordAvailable && <SignUp />}
+        <SignUp />
 
-        {emailPasswordAvailable && (
+        {(
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link

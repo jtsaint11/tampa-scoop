@@ -1,5 +1,5 @@
 import { useAction, useMutation, useQuery } from "convex/react";
-import { ArrowLeft, ExternalLink, Pencil, RotateCcw, Scissors, Trash2, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
+import { ArrowLeft, ExternalLink, Pencil, RotateCcw, Scissors, Trash2, ShieldCheck, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -13,7 +13,6 @@ import { countWords, findVerifyFlags, prettyDate, splitLines, wordRange } from "
 export function StoryPage() {
   const { storyId = "" } = useParams();
   const story = useQuery(api.stories.get, { storyId });
-  const draftStory = useAction(api.stories.draftStory);
   const saveDraft = useMutation(api.stories.saveDraft);
   const setState = useMutation(api.stories.setState);
   const deleteStory = useAction(api.deletes.deleteStory);
@@ -38,7 +37,6 @@ export function StoryPage() {
   const [draft, setDraft] = useState("");
   const [notes, setNotes] = useState("");
   const [dirty, setDirty] = useState(false);
-  const [drafting, setDrafting] = useState(false);
   const [editingIntake, setEditingIntake] = useState(false);
 
   // Load server copy whenever it changes and the editor has no unsaved typing.
@@ -66,23 +64,6 @@ export function StoryPage() {
   const flags = findVerifyFlags(`${headline}\n${draft}`);
   const urls = splitLines(story.sourceUrls);
   const facts = splitLines(story.factBullets);
-
-  const runDraft = async () => {
-    if (dirty && !window.confirm("Regenerating replaces your edits to the draft. Continue?")) return;
-    setDrafting(true);
-    try {
-      const r = await draftStory({ storyId });
-      if (!r.ok) toast.error(r.message);
-      else {
-        setDirty(false);
-        toast.success(
-          `Drafted: ${r.wordCount} words${r.verifyFlags.length ? `, ${r.verifyFlags.length} VERIFY flag${r.verifyFlags.length > 1 ? "s" : ""}` : ""}`,
-        );
-      }
-    } finally {
-      setDrafting(false);
-    }
-  };
 
   const save = async () => {
     await saveDraft({ storyId, headline, draft, editorNotes: notes });
@@ -206,12 +187,6 @@ export function StoryPage() {
           <div className={cn(ui.card, "space-y-4 p-5")}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-xl">{story.sponsor ? "Approved sponsor copy" : "Draft"}</h2>
-              {!story.sponsor && (
-                <Button className={btn("sunset")} onClick={runDraft} disabled={drafting} data-testid="draft-button">
-                  <Sparkles className={cn("size-4", drafting && "animate-pulse")} />
-                  {drafting ? "Drafting…" : story.draft ? "Regenerate" : "Write draft"}
-                </Button>
-              )}
             </div>
 
             {story.sponsor && (
@@ -220,12 +195,12 @@ export function StoryPage() {
               </p>
             )}
 
-            {!story.draft && !drafting && !story.sponsor ? (
-              <p className="rounded-md border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-                Write draft turns the fact bullets into a {story.tone} {story.section} item ({range.min}–{range.max} words).
-                Missing details come back as <mark className="rounded bg-warning px-1">VERIFY: [field]</mark>.
+            {!story.draft && !story.sponsor && (
+              <p className="rounded-md border border-dashed px-4 py-3 text-sm text-muted-foreground">
+                No draft yet. Paste the {story.tone} {story.section} copy ({range.min}–{range.max} words) below and save. Mark anything unchecked as <mark className="rounded bg-warning px-1">VERIFY: [field]</mark>.
               </p>
-            ) : (
+            )}
+            {(
               <>
                 <label className="block space-y-1.5">
                   <span className="text-sm font-semibold">Headline</span>
