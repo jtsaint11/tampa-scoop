@@ -3,8 +3,6 @@ import { v } from "convex/values";
 import { internalQuery, query } from "./_generated/server";
 import { isAllowedDeskUser } from "./lib/access";
 
-declare const process: { env: Record<string, string | undefined> };
-
 export const emailOf = internalQuery({
   args: { userId: v.id("users") },
   returns: v.union(v.string(), v.null()),
@@ -21,7 +19,7 @@ export const myAccess = query({
     const email = (await ctx.db.get(userId))?.email ?? "";
     return {
       signedIn: true,
-      allowed: isAllowedDeskUser(email, process.env.DESK_ALLOW_AUTOMATION === "1"),
+      allowed: isAllowedDeskUser(email),
       email,
     };
   },

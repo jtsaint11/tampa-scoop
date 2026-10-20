@@ -8,19 +8,16 @@ import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { internalMutation, internalQuery, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { authenticatedAction, authenticatedMutation, authenticatedQuery } from "./functions";
-import { PROMPT_SKELETON, splitLines } from "./lib/desk";
+import { splitLines } from "./lib/desk";
 import {
   BEEHIIV_PUB,
   beehiivPayload,
   checkRules,
   type IssueAssembly,
   SECTION_SPECS,
-  SECTION_TONES,
   type SectionTone,
-  specFor,
 } from "./lib/sections";
 import { subjectOptionValidator } from "./schema";
-import { callTool } from "./sheetsGateway";
 
 declare const process: { env: Record<string, string | undefined> };
 
@@ -28,7 +25,6 @@ type Section = NonNullable<Doc<"issues">["sections"]>[number];
 const toneV = v.union(v.literal("Deep"), v.literal("Punchy"), v.literal("Straight"));
 const blank = { Deep: "", Punchy: "", Straight: "" };
 
-export const BEEHIIV_NEEDS_AUTO = "beehiiv write needs to be set to auto in Viktor integration settings";
 
 function emptySection(key: string): Section {
   return { key, command: "", outline: "", notes: "", storyIds: [], drafts: blank, draftNotes: blank, approvedTone: "", approvedText: "", updatedAt: 0 };
@@ -136,6 +132,23 @@ export const approve = authenticatedMutation({
   },
 });
 
+/** No AI in the Desk: paste finished copy (written elsewhere) and approve it in one step. */
+export const pasteApproved = authenticatedMutation({
+  args: { issueId: v.string(), key: v.string(), text: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { issueId, key, text }) => {
+    const t = text.trim();
+    if (!t) throw new Error("Paste some text first");
+    await saveSection(ctx, issueId, key, s => ({
+      ...s,
+      drafts: { ...s.drafts, Straight: t },
+      approvedTone: "Straight",
+      approvedText: t,
+    }));
+    return null;
+  },
+});
+
 export const unapprove = authenticatedMutation({
   args: { issueId: v.string(), key: v.string() },
   returns: v.null(),
@@ -202,208 +215,6 @@ export const markBeehiiv = internalMutation({
   },
 });
 
-// ---------------------------------------------------------------- AI
-
-const VOICE_MODEL = `VOICE MODEL (The Scottsdale Scoop, adapted for Tampa; issue #1 excerpts):
-Good morning, Tampa. You're reading The Tampa Scoop, your shortcut to what's new, fun and worth knowing around town. Every issue: hand-picked events, new spots and the local news that actually changes your week.
-This is issue #1, so thanks for being here from the very start. Today: the Rays try to even the ALCS, a buzzy taco spot opens downtown and Tampa Theatre turns 100.
-Let's dive in.
-
-### Rreal Tacos Opens Downtown Today
-Atlanta-born Rreal Tacos opens to the public today in the former Haiku space downtown at 808 N. Franklin St. Expect street tacos on handmade tortillas, plus birria, quesadillas, bowls and a serious margarita program (any drink comes as a pitcher).
-Two tacos with rice and beans run $10, and there's a full kids menu. Hours are 11 a.m. to midnight daily. [That's So Tampa suggests a reservation this week](https://thatssotampa.com/rreal-tacos-tampa-mexican-restaurant/).
-
-Voice: first person, warm and casual, like a well-informed Tampa friend texting you. Specifics everywhere (street, neighborhood, price, hours) but ONLY when they are in the context. Short paragraphs. A short personal one-liner is fine ("Stoked for this one."), but never claim a visit, taste or experience that isn't in the context.`;
-
-const HARD_RULES = `HARD RULES (every draft):
-- No dashes of any kind: no em dash, no en dash, no spaced hyphen. Use commas, periods or parentheses instead. Hyphenated words are fine. Write ranges with 'to' (6 to 9 PM, Oct. 21 to 23), never 6–9.
-- No Oxford comma: write "tacos, birria and bowls", never "tacos, birria, and bowls".
-- Use contractions: it's, you're, don't, there's, that's, what's, we're, can't.
-- Never invent a fact, number, name, price, time or address. If a needed detail is missing, write VERIFY: [field] in its place. Keep every VERIFY flag already in the context.
-- Keep "proposed", "approved" and "open" exactly as the facts say them.
-- Links as [phrase](url) using only URLs from the context. Item headlines as "### Headline". Only use the markup the section brief shows (### , ## , >> , > , [[BADGE]], **bold**). No photo or poll lines; the layout adds those.`;
-
-const TONE_GUIDE = `TONES:
-- Deep: fuller, more context and the why-it-matters, toward the top of the length target.
-- Punchy: energetic, short sentences, a little playful, middle of the length target.
-- Straight: plain and efficient, just the useful facts, toward the bottom of the length target.`;
-
-function storyContext(s: Doc<"stories">): string {
-  if (s.sponsor)
-    return `[SPONSOR: ${s.sponsorName}] Approved copy (runs word for word):\n${s.sponsorCopy}\nLink: ${s.sponsorUrl}`;
-  return [
-    `[Story ${s.storyId} · ${s.section} · ${s.issueDate}]${s.headline ? ` ${s.headline}` : ""}`,
-    `FACT BULLETS:\n${s.factBullets}`,
-    `SOURCE URLS:\n${s.sourceUrls}`,
-    s.knownGaps && s.knownGaps.toLowerCase() !== "none" ? `KNOWN GAPS (write VERIFY if needed): ${s.knownGaps}` : "",
-    s.draft ? `EXISTING DRAFT (already written from these facts):\n${s.draft}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
-
-function defaultStories(key: string, issue: Doc<"issues">, all: Doc<"stories">[]) {
-  const spec = specFor(key);
-  const inIssue = all.filter(s => issue.storyIds.includes(s.storyId));
-  if (key === "intro") return inIssue;
-  if (key === "sponsor") return inIssue.filter(s => s.sponsor);
-  return inIssue.filter(s => !s.sponsor && spec.storySections.includes(s.section));
-}
-
-const draftSchema = {
-  type: "object",
-  properties: {
-    deep: { type: "string" },
-    punchy: { type: "string" },
-    straight: { type: "string" },
-    deep_note: { type: "string", description: "One line: how this draft follows the rules." },
-    punchy_note: { type: "string" },
-    straight_note: { type: "string" },
-  },
-  required: ["deep", "punchy", "straight", "deep_note", "punchy_note", "straight_note"],
-};
-
-type DraftOut = { deep: string; punchy: string; straight: string; deep_note: string; punchy_note: string; straight_note: string };
-
-export const write = authenticatedAction({
-  args: { issueId: v.string(), key: v.string() },
-  returns: v.union(v.object({ ok: v.literal(true) }), v.object({ ok: v.literal(false), message: v.string() })),
-  handler: async (ctx, { issueId, key }) => {
-    const data = await ctx.runQuery(internal.sections.contextInternal, { issueId });
-    if (!data) return { ok: false as const, message: "Issue not found." };
-    const { issue, stories } = data;
-    const spec = specFor(key);
-    const sec = fullSections(issue).find(s => s.key === key) ?? emptySection(key);
-    const picked = sec.storyIds.length
-      ? stories.filter(s => sec.storyIds.includes(s.storyId))
-      : defaultStories(key, issue, stories);
-
-    // Sponsor copy runs word for word: no AI.
-    const sponsorStory = picked.find(s => s.sponsor && s.sponsorCopy.trim());
-    if (key === "sponsor" && sponsorStory) {
-      const text = `${sponsorStory.sponsorCopy.trim()}${sponsorStory.sponsorUrl ? `\n\n[Learn more about ${sponsorStory.sponsorName}](${sponsorStory.sponsorUrl})` : ""}`;
-      const note = "Sponsor's approved copy, word for word (never rewritten).";
-      await ctx.runMutation(internal.sections.saveDrafts, {
-        issueId,
-        key,
-        drafts: { Deep: text, Punchy: text, Straight: text },
-        draftNotes: { Deep: note, Punchy: note, Straight: note },
-      });
-      return { ok: true as const };
-    }
-
-    const material: string[] = picked.map(storyContext);
-    if (key === "events" && issue.eventPicks.length)
-      material.push(
-        `EVENT PICKS (from the verified Events calendar):\n${issue.eventPicks
-          .map(e => `${e.startDate} | ${e.name} | ${e.venue} | ${e.time} | ${e.price}${e.note ? ` | ${e.note}` : ""}`)
-          .join("\n")}`,
-      );
-    if (key === "business" && issue.business)
-      material.push(`DIRECTORY BUSINESS: ${issue.business.name} (${issue.business.category}, ${issue.business.neighborhood}). ${issue.business.note}`);
-    if (key === "intro") {
-      const approved = fullSections(issue).filter(s => s.key !== "intro" && s.approvedText.trim());
-      if (approved.length) material.push(`APPROVED SECTIONS SO FAR:\n${approved.map(s => `[${specFor(s.key).title}]\n${s.approvedText}`).join("\n\n")}`);
-    }
-    if (sec.notes.trim()) material.push(`EDITOR NOTES (checked facts):\n${sec.notes.trim()}`);
-    if (!material.length)
-      return {
-        ok: false as const,
-        message: "No context yet. Click Add context to pick Story Queue stories or paste notes, then try again.",
-      };
-    const previous = SECTION_TONES.map(t => (sec.drafts[t] ? `[${t}]\n${sec.drafts[t]}` : "")).filter(Boolean).join("\n\n");
-
-    const prompt = [
-      PROMPT_SKELETON,
-      "",
-      `You write the "${spec.title}" section of The Tampa Scoop, a local Tampa email newsletter (issue date ${issue.issueDate}, ${issue.issueType}).`,
-      `SECTION BRIEF: ${spec.brief}`,
-      `LENGTH TARGET: ${spec.min} to ${spec.max} characters of visible text per draft (link URLs don't count). Stay inside it.`,
-      "",
-      VOICE_MODEL,
-      "",
-      HARD_RULES,
-      "",
-      TONE_GUIDE,
-      "",
-      "Write three complete drafts of this section (deep, punchy, straight), each ready to paste. Use only the CONTEXT.",
-      sec.command.trim() ? `EDITOR COMMAND (follow it): ${sec.command.trim()}` : "",
-      sec.outline.trim() ? `OUTLINE (follow this beat structure):\n${sec.outline.trim()}` : "",
-      previous ? `PREVIOUS DRAFTS (write fresh versions that improve on these):\n${previous}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    try {
-      const res = await callTool<{ result?: DraftOut | null; error?: string | null }>("ai_structured_output", {
-        prompt,
-        input_text: `CONTEXT:\n\n${material.join("\n\n---\n\n")}`,
-        output_schema: draftSchema,
-        intelligence_level: "balanced",
-      });
-      const r = res?.result;
-      if (!r) return { ok: false as const, message: "The AI writer returned nothing. Try again." };
-      await ctx.runMutation(internal.sections.saveDrafts, {
-        issueId,
-        key,
-        drafts: { Deep: r.deep.trim(), Punchy: r.punchy.trim(), Straight: r.straight.trim() },
-        draftNotes: { Deep: r.deep_note.trim(), Punchy: r.punchy_note.trim(), Straight: r.straight_note.trim() },
-      });
-      return { ok: true as const };
-    } catch (e) {
-      console.error("Section write failed", e);
-      return { ok: false as const, message: "The AI writer is unavailable right now. Try again in a minute." };
-    }
-  },
-});
-
-export const regenerateSubjects = authenticatedAction({
-  args: { issueId: v.string() },
-  returns: v.union(v.object({ ok: v.literal(true) }), v.object({ ok: v.literal(false), message: v.string() })),
-  handler: async (ctx, { issueId }) => {
-    const data = await ctx.runQuery(internal.sections.contextInternal, { issueId });
-    if (!data) return { ok: false as const, message: "Issue not found." };
-    const approved = fullSections(data.issue).filter(s => s.approvedText.trim() && s.key !== "sponsor");
-    if (!approved.length) return { ok: false as const, message: "Approve at least one section first." };
-    try {
-      const res = await callTool<{ result?: { options: { subject: string; preview: string; why: string }[] } | null }>(
-        "ai_structured_output",
-        {
-          prompt: [
-            "Write 5 subject line + preview text options for this issue of The Tampa Scoop, using ONLY the approved sections below.",
-            "Scottsdale Scoop model: the subject is the headline of the single most exciting local item (a named new place or a big change to a familiar place), 3 to 8 words, conversational, no date, no issue number. The preview is a second hook, often starting 'Plus' or 'And', under 90 characters.",
-            "No dashes, no Oxford comma, use contractions. Never invent anything. Don't use any item marked VERIFY.",
-            "why: one short line on why this pairing should work.",
-          ].join("\n"),
-          input_text: approved.map(s => `[${specFor(s.key).title}]\n${s.approvedText}`).join("\n\n"),
-          output_schema: {
-            type: "object",
-            properties: {
-              options: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: { subject: { type: "string" }, preview: { type: "string" }, why: { type: "string" } },
-                  required: ["subject", "preview", "why"],
-                },
-              },
-            },
-            required: ["options"],
-          },
-          intelligence_level: "balanced",
-        },
-      );
-      const opts = (res?.result?.options ?? []).slice(0, 5).map(o => ({ subject: o.subject.trim(), preview: o.preview.trim(), why: o.why.trim() }));
-      if (!opts.length) return { ok: false as const, message: "The AI writer returned nothing. Try again." };
-      await ctx.runMutation(internal.sections.saveSubjectOptions, { issueId, options: opts });
-      return { ok: true as const };
-    } catch (e) {
-      console.error("Subject options failed", e);
-      return { ok: false as const, message: "The AI writer is unavailable right now. Try again in a minute." };
-    }
-  },
-});
-
 // ---------------------------------------------------------------- beehiiv
 
 /** Creates a DRAFT post in beehiiv (never sends or schedules). One attempt, no retries. */
@@ -420,35 +231,32 @@ export const sendToBeehiiv = authenticatedAction({
     if (payload.status !== "draft") return { ok: false, message: "Refusing to send anything but a draft." };
     if (process.env.DESK_TEST_MODE === "1")
       return { ok: false, message: `Test mode: beehiiv draft not created (payload ready, ${payload.blocks.length} blocks).` };
-    let res: { content?: string; draft_id?: string | null; error?: string; response_role?: string };
+    const apiKey = process.env.BEEHIIV_API_KEY;
+    if (!apiKey) return { ok: false, message: "BEEHIIV_API_KEY is not set on the Convex deployment." };
+    let status = 0;
+    let text = "";
     try {
-      res = await callTool("mcp_pd_beehiiv_proxy_post", {
-        url: `https://api.beehiiv.com/v2/publications/${BEEHIIV_PUB}/posts`,
-        json_body: payload,
+      const r = await fetch(`https://api.beehiiv.com/v2/publications/${BEEHIIV_PUB}/posts`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
+      status = r.status;
+      text = await r.text();
     } catch (e) {
-      const msg = String(e);
-      console.warn("beehiiv call refused", msg.slice(0, 300));
-      if (/approv|permi|not allowed|denied|forbidden|auto|quarantin|draft/i.test(msg)) return { ok: false, message: BEEHIIV_NEEDS_AUTO };
-      return { ok: false, message: `beehiiv didn't take it: ${msg.slice(0, 200)}` };
+      return { ok: false, message: `beehiiv unreachable: ${String(e).slice(0, 200)}` };
     }
-    if (res?.draft_id) return { ok: false, message: BEEHIIV_NEEDS_AUTO };
-    if (res?.response_role === "tool_error" || (res?.error && !res.content)) {
-      const msg = res.error ?? "error";
-      if (/approv|permi|not allowed|denied/i.test(msg)) return { ok: false, message: BEEHIIV_NEEDS_AUTO };
-      return { ok: false, message: `beehiiv didn't take it: ${msg.slice(0, 200)}` };
-    }
+    if (status === 401 || status === 403)
+      return { ok: false, message: `beehiiv refused the key (${status}). Check BEEHIIV_API_KEY and that the plan allows the Posts API.` };
+    if (status >= 300) return { ok: false, message: `beehiiv said ${status}: ${text.slice(0, 200)}` };
     try {
-      const outer = JSON.parse(res.content ?? "{}") as { status_code?: number; body?: unknown };
-      const body = (typeof outer.body === "string" ? JSON.parse(outer.body) : outer.body) as { data?: { id?: string }; errors?: unknown };
-      if (outer.status_code && outer.status_code >= 300)
-        return { ok: false, message: `beehiiv said ${outer.status_code}: ${JSON.stringify(body).slice(0, 200)}` };
+      const body = JSON.parse(text) as { data?: { id?: string } };
       const id = body?.data?.id ?? "";
       if (id) await ctx.runMutation(internal.sections.markBeehiiv, { issueId, postId: id });
-      return { ok: true, message: "Draft created in beehiiv. Open beehiiv to review, add photos and send it yourself." };
     } catch {
-      return { ok: true, message: "beehiiv accepted the draft. Open beehiiv to check it." };
+      // Accepted but unparseable: still a draft.
     }
+    return { ok: true, message: "Draft created in beehiiv. Open beehiiv to review, add photos and send it yourself." };
   },
 });
 

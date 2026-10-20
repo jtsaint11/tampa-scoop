@@ -1,6 +1,3 @@
-// PHI console redaction (active only on PHI deployments) — imported first
-// so any module using these builders gets the shim before handlers run.
-import "./phiLogging";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import {
   customAction,
@@ -12,8 +9,6 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, mutation, query } from "./_generated/server";
 import { isAllowedDeskUser } from "./lib/access";
-
-declare const process: { env: Record<string, string | undefined> };
 
 type AuthCtx = Parameters<typeof getAuthUserId>[0];
 
@@ -36,7 +31,7 @@ async function authenticatedContext(ctx: AuthCtx) {
       { userId },
     )) ?? undefined;
   }
-  if (!isAllowedDeskUser(email, process.env.DESK_ALLOW_AUTOMATION === "1")) {
+  if (!isAllowedDeskUser(email)) {
     throw new Error("Not allowed: the Scoop Desk is private to its editor.");
   }
   return { userId };

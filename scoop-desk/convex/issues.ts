@@ -2,11 +2,10 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { internalQuery, type QueryCtx } from "./_generated/server";
-import { authenticatedAction, authenticatedMutation, authenticatedQuery } from "./functions";
-import { CHECKLIST, type IssueType, issueId as makeIssueId, PROMPT_SKELETON, splitLines } from "./lib/desk";
+import { authenticatedMutation, authenticatedQuery } from "./functions";
+import { CHECKLIST, type IssueType, issueId as makeIssueId, splitLines } from "./lib/desk";
 import { type RenderInput, renderIssue } from "./lib/render";
 import { businessPickValidator, eventPickValidator } from "./schema";
-import { callTool } from "./sheetsGateway";
 
 const issueTypeV = v.union(v.literal("Tue news"), v.literal("Thu weekend"), v.literal("Sat food"));
 
@@ -247,63 +246,6 @@ export const exportIssue = authenticatedMutation({
       text: rendered.text,
       links: rendered.links,
     };
-  },
-});
-
-// ---------------------------------------------------------------- AI packaging
-
-/** Suggests subject, preview text and opening from the issue's own drafts (nothing else). */
-export const suggestPackaging = authenticatedAction({
-  args: { issueId: v.string() },
-  returns: v.union(
-    v.object({ ok: v.literal(true), subject: v.string(), previewText: v.string(), opening: v.string() }),
-    v.object({ ok: v.literal(false), message: v.string() }),
-  ),
-  handler: async (ctx, { issueId }) => {
-    const data = await ctx.runQuery(internal.issues.getInternal, { issueId });
-    if (!data) return { ok: false as const, message: "Issue not found." };
-    const input = toRenderInput(data.issue, data.stories);
-    const nonSponsor = input.stories.filter(s => !s.sponsor);
-    if (!nonSponsor.length && !input.eventPicks.length)
-      return { ok: false as const, message: "Add at least one drafted story or event pick first." };
-    const material = [
-      ...nonSponsor.map(s => `[${s.section}] ${s.headline}\n${s.draft}`),
-      ...input.eventPicks.map(e => `[Event pick] ${e.name} - ${e.startDate} ${e.time} - ${e.venue}`),
-    ].join("\n\n");
-    try {
-      const res = await callTool<{ result?: { subject: string; preview_text: string; opening: string } | null; error?: string | null }>(
-        "ai_structured_output",
-        {
-          prompt: [
-            PROMPT_SKELETON,
-            "",
-            `Package a ${input.issueType} issue of a Tampa local newsletter from the MATERIAL below (already-verified drafts). Use only facts in the material.`,
-            "subject: 'Tampa in 5: [lead consequence] + [standout event]' pattern, under 60 characters if possible. It must match what's in the issue.",
-            "preview_text: under 90 characters, complements (doesn't repeat) the subject.",
-            "opening: one sentence that earns the scroll; no weather filler unless weather changes plans; no hype.",
-            "Keep VERIFY markers if a fact you need is marked VERIFY in the material. Do not use the word 'best'.",
-          ].join("\n"),
-          input_text: material,
-          output_schema: {
-            type: "object",
-            properties: { subject: { type: "string" }, preview_text: { type: "string" }, opening: { type: "string" } },
-            required: ["subject", "preview_text", "opening"],
-          },
-          intelligence_level: "fast",
-          model: "claude-sonnet-5",
-        },
-      );
-      if (!res?.result) return { ok: false as const, message: "The AI writer returned nothing. Try again." };
-      return {
-        ok: true as const,
-        subject: res.result.subject.trim(),
-        previewText: res.result.preview_text.trim(),
-        opening: res.result.opening.trim(),
-      };
-    } catch (e) {
-      console.error("Packaging suggestion failed", e);
-      return { ok: false as const, message: "The AI writer is unavailable right now. Try again in a minute." };
-    }
   },
 });
 

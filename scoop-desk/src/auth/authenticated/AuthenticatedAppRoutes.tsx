@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from "react-router";
-import { OAUTH_CALLBACK_PATH } from "@/auth/oauthReturn";
-import { SpaceSession } from "@/auth/SpaceSession";
+import { AuthSession } from "@/auth/AuthSession";
 import { AppLayout } from "@/components/AppLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicLayout } from "@/components/PublicLayout";
@@ -12,7 +11,6 @@ import { IssuePage } from "@/pages/IssuePage";
 import { IssuesPage } from "@/pages/IssuesPage";
 import { QueuePage } from "@/pages/QueuePage";
 import { StoryPage } from "@/pages/StoryPage";
-import { ViktorOAuthCallbackPage } from "@/pages/ViktorOAuthCallbackPage";
 
 export function AuthenticatedRoutes() {
   return (
@@ -24,10 +22,6 @@ export function AuthenticatedRoutes() {
           <Route path="/signup" element={<SignupPage />} />
         </Route>
       </Route>
-
-      {/* Return leg of "Sign in with Viktor" — outside the auth guards
-          because it owns the loading/outcome handling itself. */}
-      <Route path={OAUTH_CALLBACK_PATH} element={<ViktorOAuthCallbackPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<DeskGate />}>
@@ -51,8 +45,8 @@ export function AuthenticatedRoutes() {
 
 export function AuthenticatedAppRoutes() {
   return (
-    <SpaceSession>
+    <AuthSession>
       <AuthenticatedRoutes />
-    </SpaceSession>
+    </AuthSession>
   );
 }

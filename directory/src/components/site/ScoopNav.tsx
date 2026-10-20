@@ -6,10 +6,10 @@ import { cn } from "@/lib/utils";
 /** One-site links shared by the newsletter, events calendar and directory. */
 export const SCOOP_HOME_URL = "https://tampascoop.beehiiv.com";
 export const SCOOP_SUBSCRIBE_URL = "https://tampascoop.beehiiv.com/subscribe";
-export const SCOOP_EVENTS_URL =
-  "https://tampa-events-justin-s-team.viktor.space";
-export const SCOOP_DIRECTORY_URL =
-  "https://tampa-directory-justin-s-team.viktor.space";
+export const SCOOP_EVENTS_URL: string =
+  import.meta.env.VITE_EVENTS_URL || "https://tampa-events-justin-s-team.viktor.space";
+export const SCOOP_DIRECTORY_URL: string =
+  import.meta.env.VITE_DIRECTORY_URL || "https://tampa-directory-justin-s-team.viktor.space";
 
 type Current = "events" | "directory";
 

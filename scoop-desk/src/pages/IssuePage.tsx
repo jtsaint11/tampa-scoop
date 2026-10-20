@@ -7,7 +7,6 @@ import {
   Lock,
   Megaphone,
   RefreshCw,
-  Sparkles,
   Store,
   TriangleAlert,
 } from "lucide-react";
@@ -300,11 +299,9 @@ function BuildTab({
   update: (a: UpdateArgs) => Promise<null>;
   renderedHtml: string;
 }) {
-  const suggest = useAction(api.issues.suggestPackaging);
   const [subject, setSubject] = useState(issue.subject);
   const [preview, setPreview] = useState(issue.previewText);
   const [opening, setOpening] = useState(issue.opening);
-  const [suggesting, setSuggesting] = useState(false);
   useEffect(() => {
     setSubject(issue.subject);
     setPreview(issue.previewText);
@@ -376,28 +373,6 @@ function BuildTab({
             <Field label="Opening" htmlFor="opening">
               <textarea id="opening" className={cn(ui.input, "min-h-16")} value={opening} onChange={e => setOpening(e.target.value)} onBlur={savePackaging} />
             </Field>
-            <Button
-              className={btn("outline", "h-8 px-3")}
-              disabled={suggesting}
-              onClick={async () => {
-                setSuggesting(true);
-                try {
-                  const r = await suggest({ issueId: issue.issueId });
-                  if (!r.ok) toast.error(r.message);
-                  else {
-                    setSubject(r.subject);
-                    setPreview(r.previewText);
-                    setOpening(r.opening);
-                    await update({ subject: r.subject, previewText: r.previewText, opening: r.opening });
-                    toast.success("Suggested from this issue's drafts. Edit freely.");
-                  }
-                } finally {
-                  setSuggesting(false);
-                }
-              }}
-            >
-              <Sparkles className="size-4" /> {suggesting ? "Thinking…" : "Suggest from the drafts"}
-            </Button>
           </div>
         </Module>
 

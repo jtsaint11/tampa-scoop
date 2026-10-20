@@ -6,7 +6,6 @@ import { useNavigate } from "react-router";
 import { controlStyles } from "@/components/controlStyles";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { useTheme } from "@/contexts/ThemeContext";
-import { getEmailPasswordSignInAvailable } from "@/lib/viktor-spaces-access/config";
 import {
   Avatar,
   Button,
@@ -27,7 +26,7 @@ export function SettingsPage() {
   const { signIn, signOut } = useAuthActions();
   const deleteAccount = useMutation(api.users.deleteAccount);
   const navigate = useNavigate();
-  const emailPasswordAvailable = getEmailPasswordSignInAvailable();
+  const emailPasswordAvailable = true;
 
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);

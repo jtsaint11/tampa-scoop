@@ -79,3 +79,10 @@ Operating docs and scripts copied from the Viktor workspace: `grok-prompt.md` (m
 
 ## Secrets
 No secrets are in this repo. `.env*` files (except `.env.example`) are excluded. Put tokens in Convex/hosting env vars only.
+
+## Hosting off Viktor (branch `migrate/off-viktor`)
+Each app is its own Cloudflare Pages project (root dir = app folder) backed by its own Convex free project.
+- Build command: `npx convex deploy --cmd 'bun run build'` · Output: `dist` · Pages env: `CONVEX_DEPLOY_KEY`, `NODE_VERSION=22`.
+- Convex env (`npx convex env set`): all apps `SMARTSHEET_TOKEN`; Desk also `BEEHIIV_API_KEY`, `JWT_PRIVATE_KEY`, `JWKS`, `SITE_URL` (run `npx @convex-dev/auth` once), optional `DESK_ALLOWED_EMAILS`.
+- Optional Pages env for cross-links once new URLs exist: `VITE_EVENTS_URL`, `VITE_DIRECTORY_URL`.
+- The Desk has no AI drafting: paste finished copy into a section and approve it. beehiiv drafts are created with a direct API call (status draft only).
