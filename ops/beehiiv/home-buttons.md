@@ -16,10 +16,10 @@ So the best free way to get **big teal buttons** is a short **"Start here" post*
 3. **Subtitle:** `Everything The Tampa Scoop has, in one place.`
 4. In the body, type `/` and choose **Button**. Set:
    - Text: `📅 Events Calendar`
-   - Link (URL): `https://tampa-events-justin-s-team.viktor.space`
+   - Link (URL): `https://tampa-events.pages.dev`
 5. Press Enter, type `/` again, choose **Button** and set:
    - Text: `📍 Local Directory`
-   - Link (URL): `https://tampa-directory-justin-s-team.viktor.space`
+   - Link (URL): `https://tampa-directory.pages.dev`
 6. Click a button to check its settings. If you see a size or width option, pick **Large** or **Full width**. The color should already be teal (#0F5C6E). If it isn't, set the button color to `#0F5C6E` and the text color to white.
 7. **Optional:** below the buttons, add one line such as "New issues land in your inbox every week, so subscribe above."
 

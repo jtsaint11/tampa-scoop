@@ -8,9 +8,9 @@ Code and operating docs for the Tampa Scoop newsletter: three web apps plus the 
 
 | Folder | What it does | Live URL |
 |---|---|---|
-| `events-calendar/` | Public Tampa events calendar. Shows approved, upcoming events; lets the public submit events for review. | https://tampa-events-justin-s-team.viktor.space |
-| `directory/` | Public local-business directory with a "request a quote" form. Also hosts Instagram images in `public/assets/ig`. | https://tampa-directory-justin-s-team.viktor.space |
-| `scoop-desk/` | Private editor's desk (login required). Builds each issue section by section, drafts copy with AI, and creates a **draft** post in beehiiv (never sends). | https://tampa-desk-justin-s-team.viktor.space |
+| `events-calendar/` | Public Tampa events calendar. Shows approved, upcoming events; lets the public submit events for review. | https://tampa-events.pages.dev |
+| `directory/` | Public local-business directory with a "request a quote" form. Also hosts Instagram images in `public/assets/ig`. | https://tampa-directory.pages.dev |
+| `scoop-desk/` | Private editor's desk (login required). Builds each issue section by section, drafts copy with AI, and creates a **draft** post in beehiiv (never sends). | https://scoop-desk.pages.dev |
 
 **Stack (each app):** Vite + React + TypeScript frontend (`src/`), Convex backend (`convex/`), hosted on Vercel. `bun install` then `bun run dev` locally (needs a Convex deployment).
 

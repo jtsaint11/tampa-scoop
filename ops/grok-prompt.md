@@ -37,7 +37,7 @@ A Google Sheets workbook ("Tampa Scoop", ID 1tuk50-uXXDLKMIWuUUN-4seIeG0HRyWQm5F
 **Websites (built on Viktor Spaces; they read Smartsheet live):**
 - Events calendar: https://tampa-events.pages.dev
 - Business directory: https://tampa-directory.pages.dev
-- Scoop Desk (Justin's issue-writing tool): https://tampa-desk-justin-s-team.viktor.space
+- Scoop Desk (Justin's issue-writing tool): https://scoop-desk.pages.dev
 
 **Buffer (social scheduling, free plan, 10 scheduled posts per channel):** channel @thetampascoop (ID 6ad65002778b240e2f5b775c). Scheduled (Eastern): Oct 20 12pm, Oct 21 12pm, Oct 22 7pm, Oct 24 10am, Oct 26 7pm, Oct 27 9am, Oct 28 12pm, Oct 29 12pm, Oct 31 10am. The post images are hosted on the directory site at /assets/ig/. Those files must stay online until Oct 31. Buffer can't pin posts, so Justin pins post 1 by hand after it goes up. Justin's other Buffer channels (@thetampawellnessguide, X @thebtchodlr) are not part of this business. Leave them alone.
 

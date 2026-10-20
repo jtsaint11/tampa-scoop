@@ -18,8 +18,8 @@ Everything here is ready to copy and paste. The images are in this folder: profi
 | Order | URL | Title |
 |---|---|---|
 | 1 | https://tampascoop.beehiiv.com | Subscribe free |
-| 2 | https://tampa-events-justin-s-team.viktor.space | Events calendar |
-| 3 | https://tampa-directory-justin-s-team.viktor.space | Local directory |
+| 2 | https://tampa-events.pages.dev | Events calendar |
+| 3 | https://tampa-directory.pages.dev | Local directory |
 Your profile shows the first link. Keep Subscribe at the top.
 
 **Category:** Media/News Company (other good choices: Newspaper, Publisher).
