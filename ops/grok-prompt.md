@@ -92,7 +92,8 @@ Justin picks stories from the radar. You help draft the issue in this exact stru
 4. **Local Business of the Week:** one non-sponsored business from the directory, about 100 words, ending with a "Nothing in this section is sponsored" line.
 5. **Date Spot of the Week:** one venue with specific dishes and prices. Never claim Justin visited unless he tells you he did.
 6. **Weekly Events List:** grouped by day, one line each as "emoji Event | Venue | Time", linked to the ticket page, 8 to 15 lines. Ends with a link to the events calendar.
-7. **The Good Life:** a fun, feel-good item (Scottsdale uses the priciest home sold that week, which needs a real, sourced sale).
+7. ~~The Good Life~~ **Dropped from Nov 12, 2026 on (Justin):** no Good Life section in any issue.
+8. **Road Work & Detours (from Nov 12, 2026, Justin):** after Quick Hits, whenever there are enough items: road and ramp closures, construction and anything disrupting commutes across Tampa Bay. Straight tone (30 to 55 words each), confirmed dates/times from FDOT, THEA, city or county pages, one link each.
 
 Every issue ends with links to the **Events Calendar** and the **Business Directory**, plus a one-question poll for Justin to add in beehiiv.
 
