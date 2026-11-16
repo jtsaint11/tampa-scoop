@@ -11,7 +11,7 @@ What it does: before each issue it finds what's happening in Tampa (and the wide
 |---|---|---|---|
 | Tuesday (news + week setup) | previous 7 days | issue day → +7 days (Events tab: start date issue day … +7) | the week's biggest local story, openings, civic dates that need action |
 | Thursday (weekend planner) | previous 3 days | Fri–Sun of that week | free/family/date-night events, festivals, games |
-| Saturday (food + next week) | previous 5 days | next Mon–Sun | openings, food events, "Good Life"-style fun reads |
+| Saturday (food + next week) | previous 5 days | next Mon–Sun | openings, food events, fun reads |
 
 Drop anything published before the news window unless there's a new development (status change, vote, opening date) inside it.
 

@@ -17,7 +17,8 @@ Open "Tampa Scoop radar" in Gmail. The cards are ranked best first and grouped (
 - 3 to 5 events for **Weekly Events List**
 - 1 food or night-out pick for **Date Spot of the Week**
 - 1 business for **Local Business of the Week**
-- 1 easy, feel-good item for **The Good Life**
+- ~~The Good Life~~: dropped from Nov 12, 2026 on (Justin). Don't pick one.
+- Road and construction items for **Road Work & Detours** (after Quick Hits) when there are enough of them
 
 Open "Read source →" on each pick. Note anything in the "Check before printing" box; those details come through as VERIFY.
 
