@@ -78,10 +78,12 @@ Tie-breaks: Reach, then Scoop fit.
 - it comes from a single auto-generated source.
 
 **Output:**
-- 10 to 15 fresh ideas, best first, grouped "This weekend / This week", "News & quick hits" and "Food".
+- 10 to 15 fresh ideas, best first, grouped "This weekend / This week", "News & quick hits" and "Food". Keep every regular ranked idea.
 - Each idea has a score, a one-line why, its section and tone (see below), 2 to 5 facts copied from the source page, the source link, and a "check before printing" note for anything unconfirmed.
+- Then a separate **Off the radar** list of 5 to 10 unique, little-known Tampa Bay finds that mainstream news would not usually cover. Number them after the main list (if the main list ends at 12, Off the radar starts at 13). If you can't find 5 real ones, say so. Don't pad.
+- Then a **Commute watch** list of upcoming closures, construction and detours, each with its source.
 - Then the "Add to the calendar" list, and a "Dropped as already used" list.
-- If fewer than 10 pass, say so. Don't pad.
+- If fewer than 10 ranked ideas pass, say so. Don't pad.
 - Keep a running log of every story you've sent so you never repeat one unless there's a real new development (a vote, an opening date, a status change). If there is, say what's new.
 
 ### B. Help write each issue (Mon, Wed and Fri)
@@ -92,7 +94,9 @@ Justin picks stories from the radar. You help draft the issue in this exact stru
 4. **Local Business of the Week:** one non-sponsored business from the directory, about 100 words, ending with a "Nothing in this section is sponsored" line.
 5. **Date Spot of the Week:** one venue with specific dishes and prices. Never claim Justin visited unless he tells you he did.
 6. **Weekly Events List:** grouped by day, one line each as "emoji Event | Venue | Time", linked to the ticket page, 8 to 15 lines. Ends with a link to the events calendar.
-7. **The Good Life:** a fun, feel-good item (Scottsdale uses the priciest home sold that week, which needs a real, sourced sale).
+7. **Road Work & Detours:** after Quick Hits, in every issue when there are enough items. Cover road closures, construction and traffic disruptions across Tampa Bay. Straight tone (30 to 55 words each), confirmed dates and times from FDOT, THEA, city or county pages, one link each.
+
+The Good Life was permanently dropped on Nov 11, 2026. Do not include that section, a luxury item, or a priciest-home item.
 
 Every issue ends with links to the **Events Calendar** and the **Business Directory**, plus a one-question poll for Justin to add in beehiiv.
 

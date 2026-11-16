@@ -4,7 +4,7 @@ Open the Desk, go to **Issues**, pick the date and click **Open issue builder**.
 
 ## 1. Write each section
 
-Every issue has seven sections, in this order: Intro, Tampa Snapshot, Together With [Sponsor], Local Business of the Week, Date Spot of the Week, Weekly Events List and The Good Life. Click a chip at the top to jump to one. The bar shows how many of the 7 are approved.
+Every issue has seven sections, in this order: Intro, Tampa Snapshot, Together With [Sponsor], Local Business of the Week, Date Spot of the Week, Weekly Events List and Road Work & Detours. Road Work & Detours comes after Quick Hits when there are enough road closure, construction or traffic items across Tampa Bay. Click a chip at the top to jump to one. The bar shows how many of the 7 are approved.
 
 For each section:
 
